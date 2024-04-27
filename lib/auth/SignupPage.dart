@@ -16,7 +16,7 @@ class SignupPage extends StatelessWidget {
                   height: 200,
                   child: ListTile(
                     leading: Image.network('https://i.ibb.co/TtNDYdY/Logo.jpg'),
-                    title: Text("Create an acount!", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
+                    title: Text("Create an account!", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
                     subtitle: Text("Join us now", style: TextStyle(color: Colors.grey[500], fontSize: 18),),
                   ),
 

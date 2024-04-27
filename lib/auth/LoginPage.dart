@@ -86,7 +86,11 @@ class LoginPage extends StatelessWidget {
                       }, child: Text('Sign up', style: TextStyle(color: Colors.black, fontSize: 15),))
                     ],
                   ),
-                )
+                ),
+                // FOR DEVELOPING PURPOSES
+                ElevatedButton(onPressed: () {
+                  Navigator.pushNamed(context, "/home");
+                }, child: Text('home page'))
               ]
           )
 

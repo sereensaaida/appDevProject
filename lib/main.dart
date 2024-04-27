@@ -1,6 +1,8 @@
+import 'package:eventmanager/friends/friendsPage.dart';
 import 'package:flutter/material.dart';
 import 'auth/LoginPage.dart';
 import 'auth/SignupPage.dart';
+import 'home/homePage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,6 +14,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Event Manager',
       debugShowCheckedModeBanner: false,
@@ -23,6 +26,10 @@ class MyApp extends StatelessWidget {
           return MaterialPageRoute(builder: (context) => const LoginPage());
         } else if (settings.name == "/signup") {
           return MaterialPageRoute(builder: (context) => const SignupPage());
+        } else if (settings.name == "/home") {
+          return MaterialPageRoute(builder: (context) => const HomePage());
+        } else if (settings.name == "/friends") {
+          return MaterialPageRoute(builder: (context) => const FriendsPage());
         }
         return null;
       },
@@ -32,5 +39,4 @@ class MyApp extends StatelessWidget {
 
 
 
-// https://elements.envato.com/login-ui-mobile-template-AUHZP85
 

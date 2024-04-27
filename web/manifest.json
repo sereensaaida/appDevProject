@@ -1,6 +1,6 @@
 {
-    "name": "event_manager",
-    "short_name": "event_manager",
+    "name": "eventmanager",
+    "short_name": "eventmanager",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
