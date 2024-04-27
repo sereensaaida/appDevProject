@@ -76,11 +76,11 @@ class SignupPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // Add your onPressed logic here
+                      //add credentials to firebase
                     },
                     child: Container(
                       width: 280,
-                      padding: EdgeInsets.symmetric(vertical: 15), // Adjust padding as needed
+                      padding: EdgeInsets.symmetric(vertical: 15),
                       alignment: Alignment.center,
                       child: Text(
                         'SIGN UP',

@@ -2,11 +2,24 @@ import 'package:eventmanager/friends/friendsPage.dart';
 import 'package:flutter/material.dart';
 import 'auth/LoginPage.dart';
 import 'auth/SignupPage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home/homePage.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+      options: FirebaseOptions(
+        apiKey: '"AIzaSyANQFUN_uMj6rU9iBPaOW7iBMUCYtffaqw"',
+        appId: 'com.example.eventmanager',
+        messagingSenderId: '250486671587',
+        projectId: 'eventmanager-57e84',
+        storageBucket: 'eventmanager-57e84.appspot.com',
+      )
+  );
+  runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

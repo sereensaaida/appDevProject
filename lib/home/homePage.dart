@@ -1,5 +1,9 @@
+import 'dart:html';
+
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../event/createEvent.dart';
+import '../event/listEvent.dart';
 import '../ui/bottomNavBar.dart';
 
 class HomePage extends StatelessWidget {
@@ -39,7 +43,12 @@ class HomePage extends StatelessWidget {
                       color: Colors.pinkAccent[200],
                     ),
                     TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CreateEventPage()),
+                          );
+                        },
                         child: Text(
                           'Create',
                           style: TextStyle(color: Colors.black, fontSize: 15),
@@ -54,7 +63,12 @@ class HomePage extends StatelessWidget {
                       color: Colors.pinkAccent[200],
                     ),
                     TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                         // Navigator.push(
+                           // context,
+                           // MaterialPageRoute(builder: (context) => EventListPage(events: events)),
+                          //);
+                        },
                         child: Text(
                           'Events',
                           style: TextStyle(color: Colors.black, fontSize: 15),
