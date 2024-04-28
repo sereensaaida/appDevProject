@@ -1,3 +1,5 @@
+// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -30,7 +32,11 @@ class BottomNavBar extends StatelessWidget {
           Navigator.pushNamed(context, 'profile');
         } else {
           // logout
+          FirebaseAuth.instance.signOut();
           Navigator.pushNamed(context, '/login');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Logged out successfully."))
+          );
         }
       },
     );

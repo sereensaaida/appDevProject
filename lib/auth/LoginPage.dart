@@ -1,8 +1,30 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passController = TextEditingController();
+
+  Future<void> login(BuildContext context) async {
+    final auth = FirebaseAuth.instance;
+    try {
+      await auth.signInWithEmailAndPassword(email: emailController.text, password: passController.text);
+      Navigator.pushNamed(context, "/home");
+    } catch (e) {
+      print('Failed to sign in: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Invalid credentials.")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +46,10 @@ class LoginPage extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.only(top: 80, left: 35, right: 35),
                   child: TextField(
+                    controller: emailController,
                     decoration: InputDecoration(
                       hintStyle: TextStyle(color: Colors.grey[500]),
-                      hintText: "Username",
+                      hintText: "Email",
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: Colors.grey),
                       ),
@@ -39,6 +62,8 @@ class LoginPage extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.only(top: 50, left: 35, right: 35),
                   child: TextField(
+                    controller: passController,
+                    obscureText: true,
                     decoration: InputDecoration(
                       hintStyle: TextStyle(color: Colors.grey[500]),
                       hintText: "Password",
@@ -62,6 +87,12 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
+                      if(emailController.text.isEmpty || passController.text.isEmpty || passController.text.length < 8) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("Invalid credentials.")));
+                      } else {
+                        login(context);
+                      }
                       // Add your onPressed logic here
                     },
                     child: Container(
@@ -87,10 +118,6 @@ class LoginPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                // FOR DEVELOPING PURPOSES
-                ElevatedButton(onPressed: () {
-                  Navigator.pushNamed(context, "/home");
-                }, child: Text('home page'))
               ]
           )
 
@@ -98,3 +125,4 @@ class LoginPage extends StatelessWidget {
     );
   }
 }
+
