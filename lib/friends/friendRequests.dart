@@ -204,7 +204,7 @@ class _FriendsPageState extends State<FriendRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        bottomNavigationBar: BottomNavBar(),
+        bottomNavigationBar: BottomNavBar(selectedIndex: 0, showSelected: false,),
         resizeToAvoidBottomInset: false,
         body: (Column(children: [
           Container(

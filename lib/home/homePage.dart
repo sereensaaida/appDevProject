@@ -10,7 +10,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        bottomNavigationBar: BottomNavBar(),
+        bottomNavigationBar: BottomNavBar(selectedIndex: 0,showSelected: true,),
         resizeToAvoidBottomInset: false,
         body: (Column(children: [
           Container(
