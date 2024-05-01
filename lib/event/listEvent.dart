@@ -1,33 +1,99 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
+import 'event.dart';
 import 'dart:convert';
-import '../event/event.dart';
 import 'dart:io';
 
-class EventListPage extends StatelessWidget {
-  final List<Event> events;
 
-  EventListPage({required this.events});
+
+class EventListPage extends StatefulWidget {
+  @override
+  _EventListPageState createState() => _EventListPageState();
+}
+
+class _EventListPageState extends State<EventListPage> {
+  final Stream<QuerySnapshot> _EventStream =
+  FirebaseFirestore.instance.collection('Events').snapshots();
+
+  CollectionReference users = FirebaseFirestore.instance.collection('Events');
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('My Events'),
-      ),
-      body: ListView.builder(
-        itemCount: events.length,
+      appBar: AppBar(title: Text('Event List')),
+      body: _events.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: _events.length,
         itemBuilder: (context, index) {
-          final event = events[index];
-          return ListTile(
-            title: Text(event.eventName),
-            subtitle: Text('Date: ${event.eventDate} | Guests: ${event.guests}'),
-            // Add more details or actions as needed
-          );
+          Event event = _events[index];
+          StreamBuilder<QuerySnapshot>(
+              stream: _EventStream,
+              builder: (BuildContext context,
+                  AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.hasError) {
+                  return Text(' Something Went wrong');
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Text('Loading');
+                }
+                return ListView(
+                  shrinkWrap: true,
+                  children: snapshot.data!.docs
+                      .map((DocumentSnapshot document) {
+                    Map<String, dynamic> data =
+                    document.data()! as Map<String, dynamic>;
+                    String docId = document.id;
+                    return ListTile(
+                      title: Text(data['name']),trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  String newName = '';
+                                  return AlertDialog(
+                                    title: Text('Edit User'),
+                                    content: TextField(
+                                      onChanged: (value) {
+                                        newName = value;
+                                      },
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () {
+                                            updateUser(docId, newName);
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text('Update'))
+                                    ],
+                                  );
+                                });
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            deleteUser(docId);
+                          },
+                        ),
+                      ],
+                    ),
+
+                    );
+                  }).toList(),
+                );
+              })
         },
       ),
     );
   }
 }
-

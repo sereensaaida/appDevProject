@@ -26,6 +26,10 @@ class Event {
     return users
         .add({
       'name': eventName,
+      'description': this.description,
+      'budget': this.budget,
+      'guests': this.guests,
+      'date': this.eventDate,
     })
         .then((value) => print("Event added"))
         .catchError((error) => print("Failed to add Event"));

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'event.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,20 +13,10 @@ class CreateEventPage extends StatefulWidget {
 }
 
 class _CreateEventPageState extends State<CreateEventPage> {
-  final Stream<QuerySnapshot> _userStream =
-  FirebaseFirestore.instance.collection('Events').snapshots();
+  TextEditingController _budgetController = TextEditingController();
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _descriptionController = TextEditingController();
 
-  CollectionReference users = FirebaseFirestore.instance.collection('Events');
-
-
-  Future<void> addEvent() {
-    return users
-        .add({
-      'name': name,
-    })
-        .then((value) => print("User added"))
-        .catchError((error) => print("Failed to add the user"));
-  }
 
 
   int numberOfGuests = 0;
@@ -99,7 +88,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           Container(
               padding: EdgeInsets.only(top: 10, left: 55, right: 55),
               child: TextField(
-
+    controller: _nameController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey),
@@ -119,7 +108,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           Container(
               padding: EdgeInsets.only(top: 10, left: 55, right: 55),
           child: TextField(
-
+controller: _descriptionController,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.grey),
@@ -139,7 +128,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           Container(
               padding: EdgeInsets.only(top: 10, left: 55, right: 55),
               child: TextField(
-
+                controller: _budgetController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey),
@@ -242,7 +231,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
             ),
           ),
               onPressed: () {
-                //logic to add friend
+                Event e1 = Event(
+                  eventName: _nameController.text,
+                  description: _descriptionController.text,
+                  budget: double.parse(_budgetController.text),
+                  eventDate: currentDate,
+                  guests: numberOfGuests,
+                );
+                e1.addEvent();
               },
               child: Text('Create Event!', style: TextStyle(fontSize: 20, color: Colors.white)))
 
