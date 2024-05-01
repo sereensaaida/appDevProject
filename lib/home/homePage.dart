@@ -1,10 +1,8 @@
-import 'dart:html';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
-import '../event/createEvent.dart';
-import '../event/listEvent.dart';
 import '../ui/bottomNavBar.dart';
+
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -12,12 +10,12 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        bottomNavigationBar: BottomNavBar(),
+        bottomNavigationBar: BottomNavBar(selectedIndex: 0,showSelected: true,),
         resizeToAvoidBottomInset: false,
         body: (Column(children: [
           Container(
-            padding: EdgeInsets.only(top: 90, left: 10),
-            height: 200,
+            padding: EdgeInsets.only(top: 50, left: 10),
+            height: 150,
             child: ListTile(
               leading: Image.network('https://i.ibb.co/TtNDYdY/Logo.jpg'),
               title: Text(
@@ -31,7 +29,7 @@ class HomePage extends StatelessWidget {
             ),
           ),
           Container(
-            padding: EdgeInsets.only(top: 25),
+            margin: EdgeInsets.only(top: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -43,12 +41,7 @@ class HomePage extends StatelessWidget {
                       color: Colors.pinkAccent[200],
                     ),
                     TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => CreateEventPage()),
-                          );
-                        },
+                        onPressed: () {},
                         child: Text(
                           'Create',
                           style: TextStyle(color: Colors.black, fontSize: 15),
@@ -64,10 +57,7 @@ class HomePage extends StatelessWidget {
                     ),
                     TextButton(
                         onPressed: () {
-                         // Navigator.push(
-                           // context,
-                           // MaterialPageRoute(builder: (context) => EventListPage(events: events)),
-                          //);
+
                         },
                         child: Text(
                           'Events',
