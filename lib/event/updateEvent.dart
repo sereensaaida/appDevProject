@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
@@ -16,16 +15,6 @@ class CreateEventPage extends StatefulWidget {
 }
 
 class _CreateEventPageState extends State<CreateEventPage> {
-
-  late FirebaseAuth auth;
-  late User? user;
-
-  @override
-  void initState() {
-    super.initState();
-    auth = FirebaseAuth.instance;
-    user = auth.currentUser;
-  }
 
   TextEditingController _budgetController = TextEditingController();
   TextEditingController _nameController = TextEditingController();
@@ -127,25 +116,25 @@ class _CreateEventPageState extends State<CreateEventPage> {
               )),
           Container(
               padding: EdgeInsets.only(top: 10, left: 55, right: 55),
-          child: TextField(
-            controller: _descriptionController,
+              child: TextField(
+                controller: _descriptionController,
 
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-              hintStyle: TextStyle(color: Colors.grey[500]),
-              hintText: "Enter Description",
-              contentPadding: EdgeInsets.only(
-                  top: 12, left: 8, right: 8, bottom: 12),
-            ),
-          )),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  hintText: "Enter Description",
+                  contentPadding: EdgeInsets.only(
+                      top: 12, left: 8, right: 8, bottom: 12),
+                ),
+              )),
           Container(
               padding: EdgeInsets.only(top: 10, left: 55, right: 55),
               child: TextField(
@@ -180,11 +169,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ElevatedButton(style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.pinkAccent[400],
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(5),
-    ),
-    ),
+                    backgroundColor: Colors.pinkAccent[400],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
                       onPressed: () => _selectTime(context),
                       child: Text('Pick a Date', style: TextStyle(color: Colors.white)))
                 ],
@@ -253,12 +242,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
             ),
           ),
               onPressed: () {
-               Event e1 = new Event(userID: user!.uid, eventName: _nameController.text, description: _descriptionController.text, budget:double.parse(_budgetController.text), eventDate: currentDate, guests: numberOfGuests);
-              e1.addEvent();
-               ScaffoldMessenger.of(context).showSnackBar(
-                   SnackBar(content: Text("Event Created!")));
+                Event e1 = new Event(userID: '34' , eventName: _nameController.text, description: _descriptionController.text, budget:double.parse(_budgetController.text), eventDate: currentDate, guests: numberOfGuests);
+                //e1.updateEvent();
               },
-              child: Text('Create Event!', style: TextStyle(fontSize: 20, color: Colors.white)))
+              child: Text('Update Event!', style: TextStyle(fontSize: 20, color: Colors.white)))
 
 
 
@@ -268,4 +255,4 @@ class _CreateEventPageState extends State<CreateEventPage> {
       ),
     );
 
-}}
+  }}

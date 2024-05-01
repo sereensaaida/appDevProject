@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../event/createEvent.dart';
+import '../event/listAllEvents.dart';
+
 import '../ui/bottomNavBar.dart';
 
 
@@ -41,7 +44,12 @@ class HomePage extends StatelessWidget {
                       color: Colors.pinkAccent[200],
                     ),
                     TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => CreateEventPage()),
+                          );
+                        },
                         child: Text(
                           'Create',
                           style: TextStyle(color: Colors.black, fontSize: 15),
@@ -57,6 +65,10 @@ class HomePage extends StatelessWidget {
                     ),
                     TextButton(
                         onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => AllEventListPage()),
+                          );
 
                         },
                         child: Text(
