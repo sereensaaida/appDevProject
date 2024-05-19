@@ -35,6 +35,10 @@ dependencies:
   firebase_core_platform_interface: '^5.0.0'
   email_validator: '^2.1.16'
   firebase_auth: any
+  flutter_typeahead: ^5.2.0
+  http: any
+  geolocator: ^9.0.1
+  geocoding: ^2.0.5
 
 
   # The following adds the Cupertino Icons font to your application.

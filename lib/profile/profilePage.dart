@@ -54,8 +54,9 @@ class _FriendsPageState extends State<ProfilePage> {
         emailController.text = user.email!;
 
         QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('profiles')
-            .where('user_id', isEqualTo: user.uid)
+            .collection('users')
+            .doc(user.uid)
+            .collection('profile')
             .get();
 
         profileExists = querySnapshot.docs.isNotEmpty;
@@ -115,13 +116,29 @@ class _FriendsPageState extends State<ProfilePage> {
         // TODO: CHECK IF VALID PHONE NUMBER
 
         if (profileExists) {
-          // update profile
+
+          CollectionReference profilesRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('profile');
+
+          QuerySnapshot profileSnapshot = await profilesRef.limit(1).get();
+
+          String profileDocId = profileSnapshot.docs.first.id;
+
+          await profilesRef.doc(profileDocId).update({
+            'firstName': firstNameController.text,
+            'lastName': lastNameController.text,
+            'phone': phoneController.text
+          });
 
           // update other fields
         } else {
-          CollectionReference profiles = FirebaseFirestore.instance.collection('profiles');
-          await profiles.add({
-            'user_id': user.uid,
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('profile')
+              .add({
             'firstName': firstNameController.text,
             'lastName': lastNameController.text,
             'phone': phoneController.text
