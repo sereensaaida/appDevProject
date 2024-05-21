@@ -1,258 +1,157 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
 import '../event/event.dart';
+import '../event/singleEvent.dart';
+import '../event/singleEvent.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'dart:io';
 
-class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key});
+
+class EditEventPage extends StatefulWidget {
+  final Map<String, dynamic> eventData;
+
+  const EditEventPage({Key? key, required this.eventData}) : super(key: key);
 
   @override
-  State<CreateEventPage> createState() => _CreateEventPageState();
+  State<EditEventPage> createState() => _EditEventPageState();
 }
 
-class _CreateEventPageState extends State<CreateEventPage> {
+class _EditEventPageState extends State<EditEventPage> {
+  late Stream<List<DocumentSnapshot>> _eventsStream;
 
-  TextEditingController _budgetController = TextEditingController();
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _descriptionController = TextEditingController();
+  TextEditingController _nameController = new TextEditingController();
+  TextEditingController _descriptionController = new TextEditingController();
+  TextEditingController _budgetController = new TextEditingController();
+  TextEditingController _locationController = new TextEditingController();
+  late DateTime currentDate;
+  late List<String> selectedFriends;
+  List friends = [];
 
-  final Stream<QuerySnapshot> _userStream =
-  FirebaseFirestore.instance.collection('Events').snapshots();
+  Future<void> fetchFriends() async {
+    try {
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
 
-  CollectionReference events = FirebaseFirestore.instance.collection('Events');
+      if (user != null) {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('friends')
+            .get();
 
-
-
-
-  int numberOfGuests = 0;
-
-  void incrementGuests() {
-    setState(() {
-      numberOfGuests++;
-    });
-  }
-
-  void decrementGuests() {
-    setState(() {
-      if (numberOfGuests > 0) {
-        numberOfGuests--;
+        setState(() {
+          friends = querySnapshot.docs;
+        });
       }
-    });
-  }
-
-  DateTime currentDate = DateTime.now();
-  Future<void> _selectTime(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: DateTime(2010),
-      lastDate: DateTime(2030),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.fromSwatch(
-              primarySwatch: Colors.pink,
-              backgroundColor: Colors.white,
-
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (pickedDate != null && pickedDate != currentDate) {
-      setState(() {
-        currentDate = pickedDate;
-      });
+    } catch (e) {
+      print("Error fetching friends: $e");
     }
   }
 
 
   @override
+  void initState() {
+    super.initState();
+    _eventsStream = _fetchEvents();
+    _initializeData();
+    fetchFriends();
+  }
+
+  void _initializeData() {
+    _nameController.text = widget.eventData['name'];
+    _descriptionController.text = widget.eventData['description'];
+    _budgetController.text = widget.eventData['budget'];
+    _locationController.text = widget.eventData['location'];
+    currentDate = DateTime.parse(widget.eventData['date']);
+    selectedFriends = List<String>.from(widget.eventData['guests']);
+  }
+
+  Stream<List<DocumentSnapshot>> _fetchEvents() {
+    final CollectionReference usersCollection =
+    FirebaseFirestore.instance.collection('users');
+    return usersCollection.snapshots().asyncMap((snapshot) async {
+      List<DocumentSnapshot> events = [];
+      for (final doc in snapshot.docs) {
+        final eventsCollection = doc.reference.collection('events');
+        final eventsQuery = await eventsCollection.get();
+        events.addAll(eventsQuery.docs);
+      }
+      return events;
+    });
+  }
+
+  Future<void> editEvent(BuildContext context) async {
+    try {
+      // Check for empty fields here if needed
+
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('events')
+            .doc(widget.eventData['id']) // Use the event's ID for editing
+            .update({
+          'name': _nameController.text,
+          'description': _descriptionController.text,
+          'budget': _budgetController.text,
+          'location': _locationController.text,
+          'date': currentDate.toString().split(" ")[0],
+          'guests': selectedFriends,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Event edited successfully!")));
+        Navigator.pushNamed(context, "/home");
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: BottomNavBar(selectedIndex: 0, showSelected: false,),
-      resizeToAvoidBottomInset: false,
-      body: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.only(top: 90, left: 10),
-            height: 200,
-            child: ListTile(
-              leading: Image.network('https://i.ibb.co/TtNDYdY/Logo.jpg'),
-              title: Text(
-                "Create Event",
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                "Create new event",
-                style: TextStyle(color: Colors.grey[500], fontSize: 18),
-              ),
+      appBar: AppBar(
+        title: Text('Edit Event'),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Name'),
             ),
-          ),
-          Container(
-              padding: EdgeInsets.only(top: 10, left: 55, right: 55),
-              child: TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  hintStyle: TextStyle(color: Colors.grey[500]),
-                  hintText: "Enter your event name",
-                  contentPadding: EdgeInsets.only(
-                      top: 12, left: 8, right: 8, bottom: 12),
-                ),
-              )),
-          Container(
-              padding: EdgeInsets.only(top: 10, left: 55, right: 55),
-              child: TextField(
-                controller: _descriptionController,
-
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  hintStyle: TextStyle(color: Colors.grey[500]),
-                  hintText: "Enter Description",
-                  contentPadding: EdgeInsets.only(
-                      top: 12, left: 8, right: 8, bottom: 12),
-                ),
-              )),
-          Container(
-              padding: EdgeInsets.only(top: 10, left: 55, right: 55),
-              child: TextField(
-                controller: _budgetController,
-
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  hintStyle: TextStyle(color: Colors.grey[500]),
-                  hintText: "Enter Budget",
-                  contentPadding: EdgeInsets.only(
-                      top: 12, left: 8, right: 8, bottom: 12),
-                ),
-              )),
-          ListTile(
-            contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
-
-            title: Text('Event Date: ' + currentDate.toString(),  style: TextStyle(color: Colors.grey[500])),
-
-            trailing: Padding(
-
-              padding: EdgeInsets.only(right: 10),
-
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent[400],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                      onPressed: () => _selectTime(context),
-                      child: Text('Pick a Date', style: TextStyle(color: Colors.white)))
-                ],
-              ),
+            TextField(
+              controller: _descriptionController,
+              decoration: InputDecoration(labelText: 'Description'),
             ),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
-
-            title: Text('Amount Of Guests: $numberOfGuests',  style: TextStyle(color: Colors.grey[500])),
-
-            trailing: Padding(
-
-              padding: EdgeInsets.only(right: 10),
-
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.remove, color: Colors.pinkAccent[400]),
-                    onPressed: decrementGuests,
-                  ),
-                  SizedBox(width: 20),
-                  IconButton(
-                    icon: Icon(Icons.add, color: Colors.pinkAccent[400]),
-                    onPressed: incrementGuests,
-                  ),
-                ],
-              ),
+            TextField(
+              controller: _budgetController,
+              decoration: InputDecoration(labelText: 'Budget'),
             ),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
-            title: Text("Items Needed:",  style: TextStyle(color: Colors.grey[500])),
-
-            trailing: ElevatedButton(  style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pinkAccent[400],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
+            TextField(
+              controller: _locationController,
+              decoration: InputDecoration(labelText: 'Location'),
             ),
-                onPressed: () {
-                  //logic to add friend
-                },
-                child: Text('Your Items', style: TextStyle(color:  Colors.white))),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
-            title: Text("Manage The Event With Others: ",  style: TextStyle(color: Colors.grey[500])),
-
-            trailing: ElevatedButton(  style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pinkAccent[400],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-                onPressed: () {
-                  //logic to add friend
-                },
-                child: Text('Add A Friend', style: TextStyle(color:  Colors.white))),
-          ),
-          ElevatedButton(  style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.pinkAccent[400],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
-            ),
-          ),
+            // Other fields or widgets as needed
+            ElevatedButton(
               onPressed: () {
-                Event e1 = new Event(userID: '34' , eventName: _nameController.text, description: _descriptionController.text, budget:double.parse(_budgetController.text), eventDate: currentDate, guests: numberOfGuests);
-                //e1.updateEvent();
+                editEvent(context);
               },
-              child: Text('Update Event!', style: TextStyle(fontSize: 20, color: Colors.white)))
-
-
-
-
-
-        ],
+              child: Text('Save Changes'),
+            ),
+          ],
+        ),
       ),
     );
-
-  }}
+  }
+}
