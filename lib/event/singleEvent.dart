@@ -159,8 +159,8 @@ Widget build(BuildContext context) {
           Center(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                primary: Colors.pinkAccent,
-                onPrimary: Colors.white,
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.pinkAccent,
                 padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -180,8 +180,8 @@ Widget build(BuildContext context) {
           Center(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                primary: Colors.pinkAccent,
-                onPrimary: Colors.white,
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.pinkAccent,
                 padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),

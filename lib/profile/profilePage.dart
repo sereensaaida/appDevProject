@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
 
@@ -88,9 +89,14 @@ class _FriendsPageState extends State<ProfilePage> {
           return;
         }
 
+        if(phoneController.text.isNotEmpty && phoneController.text.length < 10) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text("Phone number must be at least 10 characters.")));
+          return;
+        }
+
         // if user entered old password and it's at least 8 characters
-        if (oldPasswordController.text.isNotEmpty &&
-            !(oldPasswordController.text.length < 8)) {
+        if (oldPasswordController.text.isNotEmpty) {
           // check if old password is correct
           AuthCredential credential = EmailAuthProvider.credential(
               email: user.email!, password: oldPasswordController.text);
@@ -103,17 +109,15 @@ class _FriendsPageState extends State<ProfilePage> {
             return;
           }
           // check if new password is as least 8 characters and confirm == newPass
-          if (!(newPasswordController.text.length < 8) &&
+          if (newPasswordController.text.length > 7 &&
               newPasswordController.text == confirmPasswordController.text) {
             await user.updatePassword(newPasswordController.text);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Passwords don't match.")));
+                SnackBar(content: Text("Passwords don't match or less than 8 characters.")));
             return;
           }
         }
-
-        // TODO: CHECK IF VALID PHONE NUMBER
 
         if (profileExists) {
 
@@ -147,12 +151,17 @@ class _FriendsPageState extends State<ProfilePage> {
         setProfileData();
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Update successful.")));
+      _resetPasswordFields();
     } catch (e) {
       print(e);
     }
   }
 
-
+  _resetPasswordFields() {
+    newPasswordController.text = "";
+    confirmPasswordController.text = "";
+    oldPasswordController.text = "";
+  }
 
   @override
   void initState() {
@@ -240,6 +249,10 @@ class _FriendsPageState extends State<ProfilePage> {
             padding: EdgeInsets.only(top: 28, left: 35, right: 35),
             child: TextField(
               controller: phoneController,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly
+              ],
               decoration: InputDecoration(
                 hintStyle: TextStyle(color: Colors.grey[500]),
                 hintText: "Phone",

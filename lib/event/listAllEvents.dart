@@ -396,8 +396,7 @@ class EventDetailsPage extends StatelessWidget {
                         deleteEvent(context, eventData['id']);
                       },
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.pinkAccent,
-                        onPrimary: Colors.white,
+                        foregroundColor: Colors.white, backgroundColor: Colors.pinkAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -415,8 +414,8 @@ class EventDetailsPage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.pinkAccent,
-                        onPrimary: Colors.white,
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.pinkAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
