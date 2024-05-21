@@ -105,35 +105,23 @@ class AboutUsPage extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Address:',
+                    'Address: 123 vanier college',
                     style: TextStyle(fontSize: 16, color: Colors.pinkAccent, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
                   Text(
-                    '123 vanier college',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Phone:',
+                    'Phone: 5141111111',
                     style: TextStyle(fontSize: 16, color: Colors.pinkAccent, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
-                  Text(
-                    '5141111111',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 10),
+
                   Text(
                     'Email:',
                     style: TextStyle(fontSize: 16, color: Colors.pinkAccent, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
                   Text(
-                    'sereen@test.com',
-                    style: TextStyle(fontSize: 16),
-                  ),Text(
-                    'denis@test.com',
+                    'sereen@test.com and denis@test.com',
                     style: TextStyle(fontSize: 16),
                   ),
 

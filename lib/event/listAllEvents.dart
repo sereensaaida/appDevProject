@@ -55,27 +55,19 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
 
       for (var userDoc in usersSnapshot.docs) {
         final CollectionReference userEventsCollection = usersCollection.doc(userDoc.id).collection('events');
-        print('Checking events for user: ${userDoc.id}'); // Log user ID being checked
 
-        // Add the stream of events where the current user's ID is in the guests array
         streams.add(
           userEventsCollection.where('guests', arrayContains: user.uid).snapshots().map((snapshot) {
-            print('Found ${snapshot.docs.length} events for user: ${userDoc.id}'); // Log the number of events found
             return snapshot.docs;
           }),
         );
       }
 
-      // Merge all the streams into a single stream
       await for (var value in StreamGroup.merge(streams)) {
         if (value.isNotEmpty) {
           yield value;
-        } else {
-          print('No events found'); // Log when no events are found
         }
       }
-    } else {
-      throw Exception('User not logged in.');
     }
   }
   @override
@@ -491,7 +483,7 @@ class _EditEventPageState extends State<EditEventPage> {
             .collection('users')
             .doc(user.uid)
             .collection('events')
-            .doc(eventId) // Use the event ID directly here
+            .doc(eventId)
             .update({
           'name': newName,
           'description': newDescription,
@@ -531,7 +523,7 @@ class _EditEventPageState extends State<EditEventPage> {
                 TextButton(
                   child: Text("OK"),
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop();
                   },
                 ),
               ],
@@ -550,7 +542,7 @@ class _EditEventPageState extends State<EditEventPage> {
               TextButton(
                 child: Text("OK"),
                 onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
+                  Navigator.of(context).pop();
                 },
               ),
             ],
