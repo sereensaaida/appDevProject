@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -551,6 +552,7 @@ class _EditEventPageState extends State<EditEventPage> {
     _nameController = TextEditingController(text: widget.eventData['name']);
     _descriptionController = TextEditingController(text: widget.eventData['description']);
     _budgetController = TextEditingController(text: widget.eventData['budget']);
+    fetchFriends();
     _locationController = TextEditingController(text: widget.eventData['location']);
     _dateController = TextEditingController(text: widget.eventData['date']);
 
@@ -605,6 +607,80 @@ class _EditEventPageState extends State<EditEventPage> {
         currentDate = pickedDate;
       });
     }
+  }
+
+  List friends = [];
+  List<String> selectedFriends = [];
+  Future<void> fetchFriends() async {
+    try {
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+
+      if (user != null) {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('friends')
+            .get();
+
+        setState(() {
+          friends = querySnapshot.docs;
+        });
+      }
+    } catch (e) {
+      print("Error fetching friends: $e");
+    }
+  }
+  void _showSelectFriendsPopup() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select Friends'),
+          content: Container(
+            width: double.minPositive,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: friends.length,
+              itemBuilder: (context, index) {
+                final friend = friends[index];
+                return StatefulBuilder(
+                  builder: (context, setState) {
+                    final isSelected = selectedFriends.contains(friend.id);
+                    return ListTile(
+                      title: Text(friend.get("email")),
+                      trailing: isSelected ? Icon(Icons.check_box) : Icon(Icons.check_box_outline_blank),
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            selectedFriends.remove(friend.id);
+                          } else {
+                            selectedFriends.add(friend.id);
+                          }
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                print('Selected friends: $selectedFriends');
+                Navigator.of(context).pop();
+              },
+              child: Text('Select'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> updateEvent(BuildContext context, String eventId, String newName, String newDescription, String newBudget, String newLocation, String newDate) async {
@@ -741,6 +817,10 @@ class _EditEventPageState extends State<EditEventPage> {
               ),
               SizedBox(height: 10),
               TextFormField(
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 controller: _budgetController,
                 decoration: InputDecoration(
                   labelText: 'Budget',
@@ -795,6 +875,18 @@ class _EditEventPageState extends State<EditEventPage> {
             ),
           ),
               SizedBox(height: 20),
+              ListTile(
+                contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
+                title:
+                Text("Guest list: ", style: TextStyle(color: Colors.grey[500])),
+                trailing: TextButton(
+                    onPressed: () {
+                      _showSelectFriendsPopup();
+                    },
+                    child: Text('Select friends 🤝🏼',
+                        style: TextStyle(color: Colors.grey, fontSize: 16))),
+              ),
+              SizedBox(height:20),
               ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.pinkAccent[400],
