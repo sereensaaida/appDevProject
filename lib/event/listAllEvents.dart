@@ -580,8 +580,8 @@ class _EditEventPageState extends State<EditEventPage> {
         TextEditingController(text: widget.eventData['description']);
     _budgetController = TextEditingController(text: widget.eventData['budget']);
     fetchFriends();
-    _locationController =
-        TextEditingController(text: widget.eventData['location']);
+    _locationController = TextEditingController(text: widget.eventData['location']);
+    currentDate = DateTime.parse(widget.eventData['date']);
     _dateController = TextEditingController(text: widget.eventData['date']);
   }
 
@@ -953,9 +953,13 @@ class _EditEventPageState extends State<EditEventPage> {
                     );
                   }
                 },
-                child: Text('Update Event',
-                    style: TextStyle(
-                        fontSize: 20, color: Colors.white, letterSpacing: 0.5)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(
+                    'Update Event',
+                    style: TextStyle(fontSize: 20, color: Colors.white, letterSpacing: 0.5),
+                  ),
+                ),
               ),
             ],
           ),
