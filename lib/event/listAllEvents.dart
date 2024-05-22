@@ -2,6 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../ui/bottomNavBar.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:async/async.dart';
 import '../event/event.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -94,13 +99,12 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
         body: TabBarView(
           children: [
             _buildEventsTab(_myEventsStream),
-            _buildEventsTab(_myInvitesStream),
+            _buildInviteEventsTab(_myInvitesStream),
           ],
         ),
       ),
     );
   }
-
   Widget _buildEventsTab(Stream<List<DocumentSnapshot>> stream) {
     return StreamBuilder<List<DocumentSnapshot>>(
       stream: stream,
@@ -175,7 +179,94 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            EventDetailsPage(eventData: eventData),
+                            EventDetailsPage(eventData: eventData, status: 1),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> stream) {
+    return StreamBuilder<List<DocumentSnapshot>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        final events = snapshot.data ?? [];
+        if (events.isEmpty) {
+          return Center(child: Text('No events available'));
+        }
+        return ListView.builder(
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            DocumentSnapshot document = events[index];
+            Map<String, dynamic> eventData = document.data() as Map<String, dynamic>;
+            String eventId = document.id;
+
+            eventData['id'] = eventId;
+            return Center(
+              child: Container(
+                margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.pinkAccent, width: 2.0),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(10),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        eventData['name'],
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.pinkAccent,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: Colors.pinkAccent),
+                          SizedBox(width: 5),
+                          Text(
+                            eventData['date'],
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: Colors.pinkAccent),
+                          SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              eventData['location'],
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            EventDetailsPage(eventData: eventData, status: 2),
                       ),
                     );
                   },
@@ -192,8 +283,9 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
 
 class EventDetailsPage extends StatelessWidget {
   final Map<String, dynamic> eventData;
+  final int status;
 
-  const EventDetailsPage({Key? key, required this.eventData}) : super(key: key);
+  const EventDetailsPage({Key? key, required this.eventData, required this.status}) : super(key: key);
 
   Future<String> fetchUserEmail(String userId) async {
     final userData = await FirebaseFirestore.instance.collection('users').doc(userId).get();
@@ -302,7 +394,7 @@ class EventDetailsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -314,7 +406,7 @@ class EventDetailsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -326,7 +418,7 @@ class EventDetailsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -338,7 +430,7 @@ class EventDetailsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -346,7 +438,7 @@ class EventDetailsPage extends StatelessWidget {
                   if (eventData['guests'] != null && eventData['guests'].isNotEmpty)
                     Column(
                       children: [
-                        SizedBox(height: 10),
+                        SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -375,7 +467,7 @@ class EventDetailsPage extends StatelessWidget {
                     ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -388,43 +480,43 @@ class EventDetailsPage extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 20),
-              Container(
-                child: Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        deleteEvent(context, eventData['id']);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white, backgroundColor: Colors.pinkAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Text('Delete'),
-                    ),
-                    SizedBox(width: 30),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditEventPage(eventData: eventData),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.pinkAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Text('Edit'),
-                    ),
-                  ],
-                )
-              )
+      ListTile(
+        leading: status == 1
+            ? ElevatedButton(
+          onPressed: () {
+            deleteEvent(context, eventData['id']);
+          },
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.pinkAccent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          child: Text('Delete'),
+        )
+            : null,
+        trailing: status == 1
+            ? ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditEventPage(eventData: eventData),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.pinkAccent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          child: Text('Edit'),
+        )
+            : null,
+      ),
 
             ],
           ),
@@ -461,6 +553,7 @@ class _EditEventPageState extends State<EditEventPage> {
     _budgetController = TextEditingController(text: widget.eventData['budget']);
     _locationController = TextEditingController(text: widget.eventData['location']);
     _dateController = TextEditingController(text: widget.eventData['date']);
+
   }
 
   @override
@@ -473,8 +566,55 @@ class _EditEventPageState extends State<EditEventPage> {
     super.dispose();
   }
 
+  //ask for this
+  DateTime currentDate = DateTime.now();
+
+  Future<List<String>> _fetchLocations(String query) async {
+    final response = await http.get(Uri.parse(
+        'https://api.geoapify.com/v1/geocode/autocomplete?text=$query&apiKey=64e26f926c7f4a18b39b30330b9fb634'));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final features = data['features'] as List;
+      return features.map((feature) => feature['properties']['formatted'] as String).toList();
+    } else {
+      throw Exception('Failed to load locations');
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime(2010),
+      lastDate: DateTime(2030),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.fromSwatch(
+              primarySwatch: Colors.pink,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (pickedDate != null && pickedDate != currentDate) {
+      setState(() {
+        currentDate = pickedDate;
+      });
+    }
+  }
+
   Future<void> updateEvent(BuildContext context, String eventId, String newName, String newDescription, String newBudget, String newLocation, String newDate) async {
     User? user = FirebaseAuth.instance.currentUser;
+
+    if(currentDate.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Date can't be older than today.")));
+      return;
+    }
 
     if (user != null) {
       try {
@@ -488,7 +628,8 @@ class _EditEventPageState extends State<EditEventPage> {
           'description': newDescription,
           'budget': newBudget,
           'location': newLocation,
-          'date': newDate,
+        'date': currentDate.toString().split(" ")[0],
+
         });
 
         showDialog(
@@ -607,21 +748,52 @@ class _EditEventPageState extends State<EditEventPage> {
                 ),
               ),
               SizedBox(height: 10),
-              TextFormField(
+              TypeAheadField(
                 controller: _locationController,
-                decoration: InputDecoration(
-                  labelText: 'Location',
-                  border: OutlineInputBorder(),
-                ),
+                builder: (context, controller, focusNode) {
+                  return TextField(
+                      controller: _locationController,
+                      focusNode: focusNode,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Location',
+                      )
+                  );
+                },
+                suggestionsCallback: (pattern) async {
+                  return await _fetchLocations(pattern);
+                },
+                itemBuilder: (context, suggestion) {
+                  return ListTile(
+                    title: Text(suggestion),
+                  );
+                },
+                onSelected: (String suggestion) {
+                  _locationController.text = suggestion;
+                },
               ),
               SizedBox(height: 10),
-              TextFormField(
-                controller: _dateController,
-                decoration: InputDecoration(
-                  labelText: 'Date',
-                  border: OutlineInputBorder(),
-                ),
+          ListTile(
+            contentPadding: EdgeInsets.only(top: 15, left: 55, right: 55),
+            title: Text('Event Date: ' + currentDate.toString().split(" ")[0],
+                style: TextStyle(color: Colors.grey[500])),
+            trailing: Padding(
+              padding: EdgeInsets.only(right: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                      onPressed: () => _selectTime(context),
+                      child: Icon(
+                        Icons.calendar_month,
+                        color: Colors.grey,
+                        size: 30,
+                      )),
+                ],
               ),
+            ),
+          ),
               SizedBox(height: 20),
               ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -631,15 +803,27 @@ class _EditEventPageState extends State<EditEventPage> {
                     ),
                   ),
                 onPressed: () {
-                  updateEvent(
-                    context,
-                    widget.eventData['id'],
-                    _nameController.text,
-                    _descriptionController.text,
-                    _budgetController.text,
-                    _locationController.text,
-                    _dateController.text,
-                  );
+                  if (_nameController.text.isEmpty ||
+                      _descriptionController.text.isEmpty ||
+                      _budgetController.text.isEmpty ||
+                      _locationController.text.isEmpty ||
+                      _dateController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Please fill in all fields.'),
+                      ),
+                    );
+                  } else {
+                    updateEvent(
+                      context,
+                      widget.eventData['id'],
+                      _nameController.text,
+                      _descriptionController.text,
+                      _budgetController.text,
+                      _locationController.text,
+                      _dateController.text,
+                    );
+                  }
                 },
                 child: Text('Update Event',   style: TextStyle(fontSize: 20, color: Colors.white, letterSpacing: 0.5))
                 ,
