@@ -49,21 +49,29 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
       throw Exception('User not logged in.');
     }
   }
+  bool _isInviteEventsFetched = false;
+
 
   Stream<List<DocumentSnapshot>> _fetchInviteEvents() async* {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
 
+    if (!_isInviteEventsFetched) {
+      _isInviteEventsFetched = true;
     if (user != null) {
-      final CollectionReference usersCollection = FirebaseFirestore.instance.collection('users');
+      final CollectionReference usersCollection = FirebaseFirestore.instance
+          .collection('users');
       final QuerySnapshot usersSnapshot = await usersCollection.get();
       List<Stream<List<DocumentSnapshot>>> streams = [];
 
       for (var userDoc in usersSnapshot.docs) {
-        final CollectionReference userEventsCollection = usersCollection.doc(userDoc.id).collection('events');
+        final CollectionReference userEventsCollection = usersCollection.doc(
+            userDoc.id).collection('events');
 
         streams.add(
-          userEventsCollection.where('guests', arrayContains: user.uid).snapshots().map((snapshot) {
+          userEventsCollection.where('guests', arrayContains: user.uid)
+              .snapshots()
+              .map((snapshot) {
             return snapshot.docs;
           }),
         );
@@ -74,6 +82,7 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
           yield value;
         }
       }
+    }
     }
   }
   @override
@@ -100,7 +109,7 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
         body: TabBarView(
           children: [
             _buildEventsTab(_myEventsStream),
-            _buildInviteEventsTab(_myInvitesStream),
+            _buildInviteEventsTab(() => _fetchInviteEvents()),
           ],
         ),
       ),
@@ -193,9 +202,9 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
     );
   }
 
-  Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> stream) {
+  Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> Function() streamBuilder ) {
     return StreamBuilder<List<DocumentSnapshot>>(
-      stream: stream,
+      stream: streamBuilder(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
