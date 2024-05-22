@@ -161,6 +161,10 @@ class HomePage extends StatelessWidget {
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     Map<String, dynamic> eventData = events[index].data() as Map<String, dynamic>;
+
+                    // **
+                    eventData['id'] = events[index].id;
+                    
                     return Center(
                       child: Container(
                         margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
