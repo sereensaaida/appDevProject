@@ -435,9 +435,14 @@ class EventDetailsPage extends StatelessWidget {
                   Icon(Icons.location_on, size: 36, color: Colors.pinkAccent),
                   SizedBox(width: 10),
                   Text(
-                    'Location: ${eventData['location']}',
+                    'Location: ',
                     style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
                   ),
+                  Text(
+                    '${eventData['location']}',
+                    style: TextStyle(fontSize: 12, color: Colors.pinkAccent),
+
+                  )
                 ],
               ),
               SizedBox(height: 20),
@@ -563,6 +568,7 @@ class _EditEventPageState extends State<EditEventPage> {
     _budgetController = TextEditingController(text: widget.eventData['budget']);
     fetchFriends();
     _locationController = TextEditingController(text: widget.eventData['location']);
+    currentDate = DateTime.parse(widget.eventData['date']);
     _dateController = TextEditingController(text: widget.eventData['date']);
 
   }
@@ -577,7 +583,6 @@ class _EditEventPageState extends State<EditEventPage> {
     super.dispose();
   }
 
-  //ask for this
   DateTime currentDate = DateTime.now();
 
   Future<List<String>> _fetchLocations(String query) async {
