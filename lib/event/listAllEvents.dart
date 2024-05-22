@@ -14,6 +14,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'dart:io';
+
 class ViewEventsPage extends StatefulWidget {
   const ViewEventsPage({Key? key}) : super(key: key);
 
@@ -29,17 +30,16 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
   void initState() {
     super.initState();
     _myEventsStream = _fetchEvents();
-    _myInvitesStream = _fetchInviteEvents();
+    _myInvitesStream = _fetchInviteEvents().asBroadcastStream();
   }
-
-
 
   Stream<List<DocumentSnapshot>> _fetchEvents() {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
 
     if (user != null) {
-      final CollectionReference userEventsCollection = FirebaseFirestore.instance
+      final CollectionReference userEventsCollection = FirebaseFirestore
+          .instance
           .collection('users')
           .doc(user.uid)
           .collection('events');
@@ -49,27 +49,25 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
       throw Exception('User not logged in.');
     }
   }
-  bool _isInviteEventsFetched = false;
-
 
   Stream<List<DocumentSnapshot>> _fetchInviteEvents() async* {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
 
-    if (!_isInviteEventsFetched) {
-      _isInviteEventsFetched = true;
     if (user != null) {
-      final CollectionReference usersCollection = FirebaseFirestore.instance
-          .collection('users');
+      final CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection('users');
+
       final QuerySnapshot usersSnapshot = await usersCollection.get();
       List<Stream<List<DocumentSnapshot>>> streams = [];
 
       for (var userDoc in usersSnapshot.docs) {
-        final CollectionReference userEventsCollection = usersCollection.doc(
-            userDoc.id).collection('events');
+        final CollectionReference userEventsCollection =
+        usersCollection.doc(userDoc.id).collection('events');
 
         streams.add(
-          userEventsCollection.where('guests', arrayContains: user.uid)
+          userEventsCollection
+              .where('guests', arrayContains: user.uid)
               .snapshots()
               .map((snapshot) {
             return snapshot.docs;
@@ -83,13 +81,13 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
         }
       }
     }
-    }
+
   }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text('Events'),
@@ -109,12 +107,13 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
         body: TabBarView(
           children: [
             _buildEventsTab(_myEventsStream),
-            _buildInviteEventsTab(() => _fetchInviteEvents()),
+            _buildInviteEventsTab(_myInvitesStream),
           ],
         ),
       ),
     );
   }
+
   Widget _buildEventsTab(Stream<List<DocumentSnapshot>> stream) {
     return StreamBuilder<List<DocumentSnapshot>>(
       stream: stream,
@@ -133,7 +132,8 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
           itemCount: events.length,
           itemBuilder: (context, index) {
             DocumentSnapshot document = events[index];
-            Map<String, dynamic> eventData = document.data() as Map<String, dynamic>;
+            Map<String, dynamic> eventData =
+            document.data() as Map<String, dynamic>;
             String eventId = document.id;
 
             eventData['id'] = eventId;
@@ -202,9 +202,9 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
     );
   }
 
-  Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> Function() streamBuilder ) {
+  Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> stream) {
     return StreamBuilder<List<DocumentSnapshot>>(
-      stream: streamBuilder(),
+      stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -220,7 +220,8 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
           itemCount: events.length,
           itemBuilder: (context, index) {
             DocumentSnapshot document = events[index];
-            Map<String, dynamic> eventData = document.data() as Map<String, dynamic>;
+            Map<String, dynamic> eventData =
+            document.data() as Map<String, dynamic>;
             String eventId = document.id;
 
             eventData['id'] = eventId;
@@ -290,15 +291,17 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
   }
 }
 
-
 class EventDetailsPage extends StatelessWidget {
   final Map<String, dynamic> eventData;
   final int status;
 
-  const EventDetailsPage({Key? key, required this.eventData, required this.status}) : super(key: key);
+  const EventDetailsPage(
+      {Key? key, required this.eventData, required this.status})
+      : super(key: key);
 
   Future<String> fetchUserEmail(String userId) async {
-    final userData = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final userData =
+    await FirebaseFirestore.instance.collection('users').doc(userId).get();
     return userData['email'];
   }
 
@@ -326,7 +329,6 @@ class EventDetailsPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pop();
-
                   },
                 ),
               ],
@@ -339,7 +341,8 @@ class EventDetailsPage extends StatelessWidget {
           builder: (BuildContext context) {
             return AlertDialog(
               title: Text("Error deleting event"),
-              content: Text("An error occurred while deleting the event: $error"),
+              content:
+              Text("An error occurred while deleting the event: $error"),
               actions: <Widget>[
                 TextButton(
                   child: Text("OK"),
@@ -358,189 +361,200 @@ class EventDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: 0,
-        showSelected: false,
-      ),
-      resizeToAvoidBottomInset: false,
-      body: Center(
-        child: Column(
-        children:[ Container(
-    padding: EdgeInsets.only(top: 50, left: 10),
-    height: 150,
-    child: ListTile(
-    leading: Image.network('https://i.ibb.co/TtNDYdY/Logo.jpg'),
-    title: Text(
-    "Events viewing",
-    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-    ),
-    subtitle: Text(
-    "View  ${eventData['name']}",
-    style: TextStyle(color: Colors.grey[500], fontSize: 18),
-    ),
-    ),
-    ),
-    Container(
-          margin: EdgeInsets.all(20),
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.pinkAccent),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event, size: 36, color: Colors.pinkAccent),
-                  SizedBox(width: 10),
-                  Text(
-                    eventData['name'],
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.pinkAccent),
-                  ),
-                ],
+        bottomNavigationBar: BottomNavBar(
+          selectedIndex: 0,
+          showSelected: false,
+        ),
+        resizeToAvoidBottomInset: false,
+        body: Center(
+          child: Column(children: [
+            Container(
+              padding: EdgeInsets.only(top: 50, left: 10),
+              height: 150,
+              child: ListTile(
+                leading: Image.network('https://i.ibb.co/TtNDYdY/Logo.jpg'),
+                title: Text(
+                  "Events viewing",
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  "View  ${eventData['name']}",
+                  style: TextStyle(color: Colors.grey[500], fontSize: 18),
+                ),
               ),
-              SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.description, size: 36, color: Colors.pinkAccent),
-                  SizedBox(width: 10),
-                  Text(
-                    'Description: ${eventData['description']}',
-                    style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
-                  ),
-                ],
+            ),
+            Container(
+              margin: EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.pinkAccent),
+                borderRadius: BorderRadius.circular(8),
               ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.attach_money, size: 36, color: Colors.pinkAccent),
-                  SizedBox(width: 10),
-                  Text(
-                    'Budget: ${eventData['budget']}',
-                    style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.event, size: 36, color: Colors.pinkAccent),
+                      SizedBox(width: 10),
+                      Text(
+                        eventData['name'],
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.pinkAccent),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.location_on, size: 36, color: Colors.pinkAccent),
-                  SizedBox(width: 10),
-                  Text(
-                    'Location: ',
-                    style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                  SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.description,
+                          size: 36, color: Colors.pinkAccent),
+                      SizedBox(width: 10),
+                      Text(
+                        'Description: ${eventData['description']}',
+                        style:
+                        TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '${eventData['location']}',
-                    style: TextStyle(fontSize: 12, color: Colors.pinkAccent),
-
-                  )
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(width: 10),
-                  if (eventData['guests'] != null && eventData['guests'].isNotEmpty)
-                    Column(
-                      children: [
-                        SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.attach_money,
+                          size: 36, color: Colors.pinkAccent),
+                      SizedBox(width: 10),
+                      Text(
+                        'Budget: ${eventData['budget']}',
+                        style:
+                        TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.location_on,
+                          size: 36, color: Colors.pinkAccent),
+                      SizedBox(width: 10),
+                      Text(
+                        'Location: ${eventData['location']}',
+                        style:
+                        TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 10),
+                      if (eventData['guests'] != null &&
+                          eventData['guests'].isNotEmpty)
+                        Column(
                           children: [
-                            Icon(Icons.people, size: 36, color: Colors.pinkAccent),
-                            SizedBox(width: 10),
-                            FutureBuilder(
-
-                              future: fetchUserEmail(eventData['guests'][0]),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return Text('Loading...');
-                                } else if (snapshot.hasError) {
-                                  return Text('Error: ${snapshot.error}');
-                                } else {
-                                  final guestEmail = snapshot.data.toString();
-                                  return Text(
-                                    'Guests: $guestEmail', // Show guest email
-                                    style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
-                                  );
-                                }
-                              },
+                            SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.people,
+                                    size: 36, color: Colors.pinkAccent),
+                                SizedBox(width: 10),
+                                FutureBuilder(
+                                  future:
+                                  fetchUserEmail(eventData['guests'][0]),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return Text('Loading...');
+                                    } else if (snapshot.hasError) {
+                                      return Text('Error: ${snapshot.error}');
+                                    } else {
+                                      final guestEmail =
+                                      snapshot.data.toString();
+                                      return Text(
+                                        'Guests: $guestEmail',
+                                        // Show guest email
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.pinkAccent),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_today, size: 36, color: Colors.pinkAccent),
-                  SizedBox(width: 10),
-                  Text(
-                    'Date: ${eventData['date']}',
-                    style: TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calendar_today,
+                          size: 36, color: Colors.pinkAccent),
+                      SizedBox(width: 10),
+                      Text(
+                        'Date: ${eventData['date']}',
+                        style:
+                        TextStyle(fontSize: 18, color: Colors.pinkAccent),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  ListTile(
+                    leading: status == 1
+                        ? ElevatedButton(
+                      onPressed: () {
+                        deleteEvent(context, eventData['id']);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.pinkAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text('Delete'),
+                    )
+                        : null,
+                    trailing: status == 1
+                        ? ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EditEventPage(eventData: eventData),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.pinkAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text('Edit'),
+                    )
+                        : null,
                   ),
                 ],
               ),
-              SizedBox(height: 20),
-      ListTile(
-        leading: status == 1
-            ? ElevatedButton(
-          onPressed: () {
-            deleteEvent(context, eventData['id']);
-          },
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.pinkAccent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          child: Text('Delete'),
-        )
-            : null,
-        trailing: status == 1
-            ? ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EditEventPage(eventData: eventData),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.pinkAccent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: Text('Edit'),
-        )
-            : null,
-      ),
-
-            ],
-          ),
-        ),
-      ]),
-      ));
+          ]),
+        ));
   }
 }
-
 
 class EditEventPage extends StatefulWidget {
   final Map<String, dynamic> eventData;
@@ -550,8 +564,6 @@ class EditEventPage extends StatefulWidget {
   @override
   _EditEventPageState createState() => _EditEventPageState();
 }
-
-
 
 class _EditEventPageState extends State<EditEventPage> {
   late TextEditingController _nameController;
@@ -564,13 +576,13 @@ class _EditEventPageState extends State<EditEventPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.eventData['name']);
-    _descriptionController = TextEditingController(text: widget.eventData['description']);
+    _descriptionController =
+        TextEditingController(text: widget.eventData['description']);
     _budgetController = TextEditingController(text: widget.eventData['budget']);
     fetchFriends();
-    _locationController = TextEditingController(text: widget.eventData['location']);
-    currentDate = DateTime.parse(widget.eventData['date']);
+    _locationController =
+        TextEditingController(text: widget.eventData['location']);
     _dateController = TextEditingController(text: widget.eventData['date']);
-
   }
 
   @override
@@ -583,6 +595,7 @@ class _EditEventPageState extends State<EditEventPage> {
     super.dispose();
   }
 
+  //ask for this
   DateTime currentDate = DateTime.now();
 
   Future<List<String>> _fetchLocations(String query) async {
@@ -592,7 +605,9 @@ class _EditEventPageState extends State<EditEventPage> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final features = data['features'] as List;
-      return features.map((feature) => feature['properties']['formatted'] as String).toList();
+      return features
+          .map((feature) => feature['properties']['formatted'] as String)
+          .toList();
     } else {
       throw Exception('Failed to load locations');
     }
@@ -625,6 +640,7 @@ class _EditEventPageState extends State<EditEventPage> {
 
   List friends = [];
   List<String> selectedFriends = [];
+
   Future<void> fetchFriends() async {
     try {
       FirebaseAuth auth = FirebaseAuth.instance;
@@ -645,6 +661,7 @@ class _EditEventPageState extends State<EditEventPage> {
       print("Error fetching friends: $e");
     }
   }
+
   void _showSelectFriendsPopup() {
     showDialog(
       context: context,
@@ -663,7 +680,9 @@ class _EditEventPageState extends State<EditEventPage> {
                     final isSelected = selectedFriends.contains(friend.id);
                     return ListTile(
                       title: Text(friend.get("email")),
-                      trailing: isSelected ? Icon(Icons.check_box) : Icon(Icons.check_box_outline_blank),
+                      trailing: isSelected
+                          ? Icon(Icons.check_box)
+                          : Icon(Icons.check_box_outline_blank),
                       onTap: () {
                         setState(() {
                           if (isSelected) {
@@ -697,12 +716,19 @@ class _EditEventPageState extends State<EditEventPage> {
     );
   }
 
-  Future<void> updateEvent(BuildContext context, String eventId, String newName, String newDescription, String newBudget, String newLocation, String newDate) async {
+  Future<void> updateEvent(
+      BuildContext context,
+      String eventId,
+      String newName,
+      String newDescription,
+      String newBudget,
+      String newLocation,
+      String newDate) async {
     User? user = FirebaseAuth.instance.currentUser;
 
-    if(currentDate.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Date can't be older than today.")));
+    if (currentDate.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Date can't be older than today.")));
       return;
     }
 
@@ -718,8 +744,7 @@ class _EditEventPageState extends State<EditEventPage> {
           'description': newDescription,
           'budget': newBudget,
           'location': newLocation,
-        'date': currentDate.toString().split(" ")[0],
-
+          'date': currentDate.toString().split(" ")[0],
         });
 
         showDialog(
@@ -735,7 +760,6 @@ class _EditEventPageState extends State<EditEventPage> {
                     Navigator.of(context).pop();
                     Navigator.of(context).pop();
                     Navigator.of(context).pop();
-
                   },
                 ),
               ],
@@ -781,8 +805,6 @@ class _EditEventPageState extends State<EditEventPage> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -852,8 +874,7 @@ class _EditEventPageState extends State<EditEventPage> {
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Location',
-                      )
-                  );
+                      ));
                 },
                 suggestionsCallback: (pattern) async {
                   return await _fetchLocations(pattern);
@@ -868,31 +889,32 @@ class _EditEventPageState extends State<EditEventPage> {
                 },
               ),
               SizedBox(height: 10),
-          ListTile(
-            contentPadding: EdgeInsets.only(top: 15, left: 55, right: 55),
-            title: Text('Event Date: ' + currentDate.toString().split(" ")[0],
-                style: TextStyle(color: Colors.grey[500])),
-            trailing: Padding(
-              padding: EdgeInsets.only(right: 10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                      onPressed: () => _selectTime(context),
-                      child: Icon(
-                        Icons.calendar_month,
-                        color: Colors.grey,
-                        size: 30,
-                      )),
-                ],
+              ListTile(
+                contentPadding: EdgeInsets.only(top: 15, left: 55, right: 55),
+                title: Text(
+                    'Event Date: ' + currentDate.toString().split(" ")[0],
+                    style: TextStyle(color: Colors.grey[500])),
+                trailing: Padding(
+                  padding: EdgeInsets.only(right: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                          onPressed: () => _selectTime(context),
+                          child: Icon(
+                            Icons.calendar_month,
+                            color: Colors.grey,
+                            size: 30,
+                          )),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
               SizedBox(height: 20),
               ListTile(
                 contentPadding: EdgeInsets.only(top: 10, left: 55, right: 55),
-                title:
-                Text("Guest list: ", style: TextStyle(color: Colors.grey[500])),
+                title: Text("Guest list: ",
+                    style: TextStyle(color: Colors.grey[500])),
                 trailing: TextButton(
                     onPressed: () {
                       _showSelectFriendsPopup();
@@ -900,14 +922,14 @@ class _EditEventPageState extends State<EditEventPage> {
                     child: Text('Select friends 🤝🏼',
                         style: TextStyle(color: Colors.grey, fontSize: 16))),
               ),
-              SizedBox(height:20),
+              SizedBox(height: 20),
               ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent[400],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
-                    ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pinkAccent[400],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
                   ),
+                ),
                 onPressed: () {
                   if (_nameController.text.isEmpty ||
                       _descriptionController.text.isEmpty ||
@@ -931,8 +953,9 @@ class _EditEventPageState extends State<EditEventPage> {
                     );
                   }
                 },
-                child: Text('Update Event',   style: TextStyle(fontSize: 20, color: Colors.white, letterSpacing: 0.5))
-                ,
+                child: Text('Update Event',
+                    style: TextStyle(
+                        fontSize: 20, color: Colors.white, letterSpacing: 0.5)),
               ),
             ],
           ),
@@ -941,5 +964,3 @@ class _EditEventPageState extends State<EditEventPage> {
     );
   }
 }
-
-
