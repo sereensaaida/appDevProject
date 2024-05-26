@@ -25,13 +25,93 @@ class ViewEventsPage extends StatefulWidget {
 class _ViewEventsPageState extends State<ViewEventsPage> {
   late Stream<List<DocumentSnapshot>> _myEventsStream;
   late Stream<List<DocumentSnapshot>> _myInvitesStream;
+  TextEditingController eventNameController = new TextEditingController();
+  List? events;
+  Future<void> searchInvitedEventsByName() async {
+    try {
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+
+      if (user != null) {
+        final QuerySnapshot usersSnapshot =
+        await FirebaseFirestore.instance.collection('users').get();
+
+        List<DocumentSnapshot> allEvents = [];
+
+        for (var userDoc in usersSnapshot.docs) {
+          final CollectionReference userEventsCollection = FirebaseFirestore
+              .instance
+              .collection('users')
+              .doc(userDoc.id)
+              .collection('events');
+
+          final QuerySnapshot eventsSnapshot =
+          await userEventsCollection.where('name', isEqualTo: eventNameController.text).get();
+
+          for (var eventDoc in eventsSnapshot.docs) {
+            final eventData = eventDoc.data() as Map<String, dynamic>;
+            final guests = eventData['guests'] ?? [];
+
+            if (guests.contains(user.uid)) {
+              allEvents.add(eventDoc);
+            }
+          }
+        }
+
+        if (allEvents.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No events found'),
+            ),
+          );
+        } else {
+          setState(() {
+            events = allEvents;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error searching events by name: $e");
+    }
+  }
+  Future<void> searchEventByName() async {
+    try {
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+
+      if (user != null) {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('events')
+            .where('name', isEqualTo: eventNameController.text)
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No events found'),
+            ),
+          );
+        } else {
+          setState(() {
+            events = querySnapshot.docs;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error searching events by name: $e");
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _myEventsStream = _fetchEvents();
-    _myInvitesStream = _fetchInviteEvents().asBroadcastStream();
+    _myInvitesStream = _fetchInviteEvents();
   }
+
+
 
   Stream<List<DocumentSnapshot>> _fetchEvents() {
     FirebaseAuth auth = FirebaseAuth.instance;
@@ -49,6 +129,8 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
       throw Exception('User not logged in.');
     }
   }
+
+
 
   Stream<List<DocumentSnapshot>> _fetchInviteEvents() async* {
     FirebaseAuth auth = FirebaseAuth.instance;
@@ -115,178 +197,302 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
   }
 
   Widget _buildEventsTab(Stream<List<DocumentSnapshot>> stream) {
-    return StreamBuilder<List<DocumentSnapshot>>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        final events = snapshot.data ?? [];
-        if (events.isEmpty) {
-          return Center(child: Text('No events available'));
-        }
-        return ListView.builder(
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            DocumentSnapshot document = events[index];
-            Map<String, dynamic> eventData =
-            document.data() as Map<String, dynamic>;
-            String eventId = document.id;
-
-            eventData['id'] = eventId;
-            return Center(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.pinkAccent, width: 2.0),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListTile(
-                  contentPadding: EdgeInsets.all(10),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        eventData['name'],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.pinkAccent,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: Colors.pinkAccent),
-                          SizedBox(width: 5),
-                          Text(
-                            eventData['date'],
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, color: Colors.pinkAccent),
-                          SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              eventData['location'],
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: eventNameController,
+                  decoration: InputDecoration(
+                    hintText: 'Search events by name',
                   ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EventDetailsPage(eventData: eventData, status: 1),
-                      ),
-                    );
-                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+              SizedBox(width: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pinkAccent[400],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                onPressed: () {
+                  searchEventByName();
+                },
+                  child: Icon(
+                    Icons.search,
+                    color: Colors.white,
+                  )),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<DocumentSnapshot>>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final events = snapshot.data ?? [];
+              if (events.isEmpty) {
+                return Center(child: Text('No events available'));
+              }
+              final displayedEvents = this.events ?? events;
+              return ListView.builder(
+                itemCount: displayedEvents.length,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot document = displayedEvents[index];
+                  Map<String, dynamic> eventData =
+                  document.data() as Map<String, dynamic>;
+                  String eventId = document.id;
+
+                  eventData['id'] = eventId;
+                  return Center(
+                    child: Container(
+                      margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border:
+                        Border.all(color: Colors.pinkAccent, width: 2.0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(10),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              eventData['name'],
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pinkAccent,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today,
+                                    color: Colors.pinkAccent),
+                                SizedBox(width: 5),
+                                Text(
+                                  eventData['date'],
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on,
+                                    color: Colors.pinkAccent),
+                                SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    eventData['location'],
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailsPage(
+                                eventData: eventData,
+                                status: 1,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        Center(
+          child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white70,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                eventNameController.clear();
+                setState(() {
+                  events = null;
+                });
+              },
+              child: Text(
+                "Reset",
+                style: TextStyle(color: Colors.grey[500]),
+              )),
+        ),
+        SizedBox(height: 20)
+      ],
     );
   }
-
   Widget _buildInviteEventsTab(Stream<List<DocumentSnapshot>> stream) {
-    return StreamBuilder<List<DocumentSnapshot>>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        final events = snapshot.data ?? [];
-        if (events.isEmpty) {
-          return Center(child: Text('No events available'));
-        }
-        return ListView.builder(
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            DocumentSnapshot document = events[index];
-            Map<String, dynamic> eventData =
-            document.data() as Map<String, dynamic>;
-            String eventId = document.id;
-
-            eventData['id'] = eventId;
-            return Center(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.pinkAccent, width: 2.0),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListTile(
-                  contentPadding: EdgeInsets.all(10),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        eventData['name'],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.pinkAccent,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: Colors.pinkAccent),
-                          SizedBox(width: 5),
-                          Text(
-                            eventData['date'],
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, color: Colors.pinkAccent),
-                          SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              eventData['location'],
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: eventNameController,
+                  decoration: InputDecoration(
+                    hintText: 'Search events by name',
                   ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EventDetailsPage(eventData: eventData, status: 2),
-                      ),
-                    );
-                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+              SizedBox(width: 10),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pinkAccent[400],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  onPressed: () {
+                    searchInvitedEventsByName();
+                  },
+                  child: Icon(
+                    Icons.search,
+                    color: Colors.white,
+                  )),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<DocumentSnapshot>>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final events = snapshot.data ?? [];
+              if (events.isEmpty) {
+                return Center(child: Text('No events available'));
+              }
+              final displayedEvents = this.events ?? events;
+              return ListView.builder(
+                itemCount: displayedEvents.length,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot document = displayedEvents[index];
+                  Map<String, dynamic> eventData =
+                  document.data() as Map<String, dynamic>;
+                  String eventId = document.id;
+
+                  eventData['id'] = eventId;
+                  return Center(
+                    child: Container(
+                      margin: EdgeInsets.fromLTRB(20, 10, 20, 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border:
+                        Border.all(color: Colors.pinkAccent, width: 2.0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(10),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              eventData['name'],
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pinkAccent,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today,
+                                    color: Colors.pinkAccent),
+                                SizedBox(width: 5),
+                                Text(
+                                  eventData['date'],
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 5),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on,
+                                    color: Colors.pinkAccent),
+                                SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    eventData['location'],
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailsPage(
+                                eventData: eventData,
+                                status: 2,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        Center(
+          child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white70,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                eventNameController.clear();
+                setState(() {
+                  events = null;
+                });
+              },
+              child: Text(
+                "Reset",
+                style: TextStyle(color: Colors.grey[500]),
+              )),
+        ),
+        SizedBox(height: 20)
+
+      ],
     );
   }
 }
@@ -347,7 +553,7 @@ class EventDetailsPage extends StatelessWidget {
                 TextButton(
                   child: Text("OK"),
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop();
                   },
                 ),
               ],
@@ -481,8 +687,7 @@ class EventDetailsPage extends StatelessWidget {
                                       snapshot.data.toString();
                                       return Text(
                                         'Guests: $guestEmail',
-                                        // Show guest email
-                                        style: TextStyle(
+                                      style: TextStyle(
                                             fontSize: 18,
                                             color: Colors.pinkAccent),
                                       );
