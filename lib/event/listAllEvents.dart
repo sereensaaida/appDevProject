@@ -108,7 +108,7 @@ class _ViewEventsPageState extends State<ViewEventsPage> {
   void initState() {
     super.initState();
     _myEventsStream = _fetchEvents();
-    _myInvitesStream = _fetchInviteEvents();
+    _myInvitesStream = _fetchInviteEvents().asBroadcastStream();
   }
 
 
